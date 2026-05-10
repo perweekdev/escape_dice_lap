@@ -58,27 +58,27 @@ export const LEVELS: LevelDef[] = [
     exit: { x: 700, y: 136, width: 48, height: 48 },
   },
 
-  // STAGE 2 — CALIBRATION ZONE  (all static — gap difficulty only)
+  // STAGE 2 — CALIBRATION ZONE  (all static, gentle staircase)
   {
     id: 2,
     name: 'CALIBRATION ZONE',
     worldWidth: 1440,
     worldHeight: 540,
     spawnX: 80,
-    spawnY: 420,
+    spawnY: 450,
     platforms: [
-      { x: 0,    y: 500, width: 320, height: 40 },  // starting ground
-      { x: 340,  y: 430, width: 120, height: 16 },  // step 1
-      { x: 490,  y: 360, width: 120, height: 16 },  // step 2 (dice here)
-      { x: 650,  y: 290, width: 120, height: 16 },  // step 3
-      { x: 810,  y: 220, width: 120, height: 16 },  // step 4
-      { x: 980,  y: 300, width: 120, height: 16 },  // step 5 (drops slightly)
-      { x: 1140, y: 220, width: 120, height: 16 },  // step 6
-      { x: 1300, y: 160, width: 120, height: 16 },  // final platform
+      { x: 0,    y: 500, width: 400, height: 40 },  // wide starting ground
+      { x: 420,  y: 500, width: 140, height: 40 },  // same level — step across
+      { x: 580,  y: 440, width: 140, height: 16 },  // small rise
+      { x: 740,  y: 380, width: 140, height: 16 },  // step up
+      { x: 900,  y: 320, width: 140, height: 16 },  // step up (dice nearby)
+      { x: 1060, y: 260, width: 140, height: 16 },  // step up
+      { x: 1220, y: 200, width: 140, height: 16 },  // step up
+      { x: 1340, y: 150, width: 60,  height: 16 },  // final narrow ledge
     ],
     hazards: [],
-    dice: { x: 550, y: 330 },
-    exit: { x: 1360, y: 116, width: 48, height: 48 },
+    dice: { x: 970, y: 290 },
+    exit: { x: 1365, y: 106, width: 48, height: 48 },
   },
 
   // STAGE 3 — PRESSURE TEST ZONE

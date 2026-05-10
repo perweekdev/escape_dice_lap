@@ -10,12 +10,6 @@ import TimerSystem from '../systems/TimerSystem'
 import { EventBus, Events } from '../EventBus'
 import { soundSystem } from '../systems/SoundSystem'
 
-interface RespawnData {
-  modules?: string
-  deaths?: number
-  elapsedMs?: number
-}
-
 export default class GameScene extends Phaser.Scene {
   private player!: Player
   private moduleSystem!: ModuleSystem
@@ -23,7 +17,6 @@ export default class GameScene extends Phaser.Scene {
   private levelObjects!: LevelObjects
   private currentLevelIdx = 0
   private diceCollectedPerLevel: boolean[] = [false, false, false, false, false]
-  // tracks which stage index each module slot's dice came from
   private diceSourceMap: Map<number, number> = new Map()
 
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys
@@ -32,14 +25,9 @@ export default class GameScene extends Phaser.Scene {
 
   private isDying = false
   private isTransitioning = false
-  private initData: RespawnData = {}
 
   constructor() {
     super('GameScene')
-  }
-
-  init(data: RespawnData) {
-    this.initData = data ?? {}
   }
 
   create() {
@@ -53,14 +41,6 @@ export default class GameScene extends Phaser.Scene {
     this.moduleSystem = new ModuleSystem()
     this.timerSystem = new TimerSystem()
 
-    // Restore state after death respawn (passed via scene.restart)
-    if (this.initData.modules) {
-      this.moduleSystem.deserialize(this.initData.modules)
-    }
-    if (this.initData.elapsedMs !== undefined) {
-      this.timerSystem.setFromSave(this.initData.deaths ?? 0, this.initData.elapsedMs)
-    }
-
     this.cursors = this.input.keyboard!.createCursorKeys()
     this.wasd = {
       left: this.input.keyboard!.addKey(Phaser.Input.Keyboard.KeyCodes.A),
@@ -72,13 +52,11 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.loadCurrentLevel()
-    // Fade in after death respawn (or fresh start)
-    this.cameras.main.fadeIn(300, 0, 0, 0)
     this.scene.launch('UIScene')
     this.time.delayedCall(0, () => {
       EventBus.emit(Events.STAGE_CHANGED, `STAGE 1: ${LEVELS[0].name}`)
       EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
-      EventBus.emit(Events.DEATH_COUNT_UPDATED, this.timerSystem.deaths)
+      EventBus.emit(Events.DEATH_COUNT_UPDATED, 0)
     })
   }
 
@@ -86,28 +64,23 @@ export default class GameScene extends Phaser.Scene {
     if (this.levelObjects) {
       this.cleanLevel()
     }
-
     const def = LEVELS[this.currentLevelIdx]
     this.physics.world.setBounds(0, 0, def.worldWidth, def.worldHeight)
     this.cameras.main.setBounds(0, 0, def.worldWidth, def.worldHeight)
-
     this.levelObjects = loadLevel(this, def, this.diceCollectedPerLevel[this.currentLevelIdx])
 
-    if (this.player) {
-      this.player.destroy()
-    }
+    if (this.player) this.player.destroy()
     this.player = new Player(this, def.spawnX, def.spawnY)
     this.player.onJump = () => soundSystem.jump()
     this.player.onLand = () => soundSystem.land()
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12)
     this.cameras.main.setFollowOffset(0, -40)
     this.cameras.main.setDeadzone(120, 60)
-
     this.setupCollisions()
   }
 
   private cleanLevel() {
-    // Clear stale physics colliders before destroying objects
+    // Destroy stale physics colliders to prevent movement freeze on respawn
     this.physics.world.colliders.getActive().forEach(c => c.destroy())
     this.children.getAll().forEach(child => {
       if (child !== this.player) child.destroy()
@@ -167,16 +140,13 @@ export default class GameScene extends Phaser.Scene {
       })
     }
 
-    if (dice) {
-      this.setupDiceOverlap(dice)
-    }
+    if (dice) this.setupDiceOverlap(dice)
 
     this.physics.add.overlap(this.player, exit, () => {
       if (!this.isTransitioning) this.advanceStage()
     })
   }
 
-  // Called after a module slot is activated — resets dice if slot depleted
   private checkDiceRespawn(slotIndex: number) {
     if (this.moduleSystem.slots[slotIndex] !== null) return
     const sourceStage = this.diceSourceMap.get(slotIndex)
@@ -185,7 +155,6 @@ export default class GameScene extends Phaser.Scene {
     this.diceSourceMap.delete(slotIndex)
     this.diceCollectedPerLevel[sourceStage] = false
 
-    // Immediately spawn dice if we're still on that stage and no dice active
     if (sourceStage === this.currentLevelIdx && !this.levelObjects.dice) {
       const pos = LEVELS[sourceStage].dice
       const newDice = new DicePickup(this, pos.x, pos.y)
@@ -210,21 +179,44 @@ export default class GameScene extends Phaser.Scene {
       return
     }
 
+    // Save state before clearing effects
     this.moduleSystem.clearAllEffects(this.player)
-    const respawnData: RespawnData = {
-      modules: this.moduleSystem.serialize(),
-      deaths: this.timerSystem.deaths,
-      elapsedMs: this.timerSystem.elapsed,
-    }
+    const savedModules = this.moduleSystem.serialize()
+    const savedDeaths = this.timerSystem.deaths
+    const savedElapsed = this.timerSystem.elapsed
 
-    // scene.start re-runs init→create with fresh physics (fixes movement freeze)
-    this.time.delayedCall(400, () => {
-      this.cameras.main.fade(250, 0, 0, 0)
-      this.time.delayedCall(260, () => {
-        this.scene.stop('UIScene')
-        this.scene.start('GameScene', respawnData)
-      })
+    this.time.delayedCall(500, () => {
+      // Restore state and respawn on Stage 1
+      this.moduleSystem.deserialize(savedModules)
+      this.timerSystem.setFromSave(savedDeaths, savedElapsed)
+      this.respawn()
+      this.isDying = false
     })
+  }
+
+  private respawn() {
+    this.currentLevelIdx = 0
+    this.diceCollectedPerLevel = [false, false, false, false, false]
+    this.diceSourceMap = new Map()
+
+    const def = LEVELS[0]
+    this.cleanLevel()
+    this.physics.world.setBounds(0, 0, def.worldWidth, def.worldHeight)
+    this.cameras.main.setBounds(0, 0, def.worldWidth, def.worldHeight)
+    this.levelObjects = loadLevel(this, def, false)
+
+    this.player.destroy()
+    this.player = new Player(this, def.spawnX, def.spawnY)
+    this.player.onJump = () => soundSystem.jump()
+    this.player.onLand = () => soundSystem.land()
+    this.cameras.main.startFollow(this.player, true, 0.12, 0.12)
+    this.cameras.main.setFollowOffset(0, -40)
+    this.cameras.main.setDeadzone(120, 60)
+    this.setupCollisions()
+
+    EventBus.emit(Events.STAGE_CHANGED, `STAGE 1: ${LEVELS[0].name}`)
+    EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
+    EventBus.emit(Events.DEATH_COUNT_UPDATED, this.timerSystem.deaths)
   }
 
   private advanceStage() {
@@ -277,7 +269,6 @@ export default class GameScene extends Phaser.Scene {
     if (!this.player) return
     this.player.handleMovement(this.cursors, this.wasd)
 
-    // module activation keys 1-5
     this.numberKeys.forEach((key, i) => {
       if (Phaser.Input.Keyboard.JustDown(key)) {
         const activated = this.moduleSystem.activateSlot(i, this.player, (text, isNegative) => {
