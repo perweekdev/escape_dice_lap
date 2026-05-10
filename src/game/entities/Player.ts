@@ -15,6 +15,8 @@ export default class Player extends Phaser.GameObjects.Container {
 
   private _facing = 1
   private _canJump = false
+  private _coyoteFrames = 0
+  private static readonly COYOTE_MAX = 8 // ~133ms at 60fps
   private _body!: Phaser.GameObjects.Rectangle
   private _antenna!: Phaser.GameObjects.Rectangle
   private _eye!: Phaser.GameObjects.Rectangle
@@ -49,7 +51,14 @@ export default class Player extends Phaser.GameObjects.Container {
     const body = this.body as Phaser.Physics.Arcade.Body
     const onGround = body.blocked.down
 
-    if (onGround) this._canJump = true
+    if (onGround) {
+      this._canJump = true
+      this._coyoteFrames = Player.COYOTE_MAX
+    } else if (this._coyoteFrames > 0) {
+      this._coyoteFrames--
+    } else {
+      this._canJump = false
+    }
 
     const speed = PLAYER_SPEED * this.speedMult
     const leftDown = (cursors.left.isDown || wasd.left.isDown) !== this.inputInverted

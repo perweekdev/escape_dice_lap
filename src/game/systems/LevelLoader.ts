@@ -4,6 +4,15 @@ import { COLORS } from '../../constants'
 import DicePickup from '../entities/DicePickup'
 import Hazard from '../entities/Hazard'
 
+export interface MovingPlatformData {
+  rect: Phaser.GameObjects.Rectangle
+  originX: number
+  originY: number
+  range: number
+  speed: number
+  axis: 'x' | 'y'
+}
+
 export interface LevelObjects {
   staticPlatforms: Phaser.Physics.Arcade.StaticGroup
   movingPlatforms: Phaser.Physics.Arcade.Group
@@ -12,15 +21,16 @@ export interface LevelObjects {
   dice: DicePickup | null
   exit: Phaser.GameObjects.Rectangle
   crumbleRects: Map<Phaser.GameObjects.Rectangle, { delay: number; fallen: boolean }>
+  movingPlatformData: MovingPlatformData[]
 }
 
 export function loadLevel(scene: Phaser.Scene, def: LevelDef, diceCollected: boolean): LevelObjects {
-  // draw grid bg
+  // fixed bg layer (doesn't scroll)
   const g = scene.add.graphics().setScrollFactor(0).setDepth(-10)
   g.fillStyle(COLORS.BG)
-  g.fillRect(0, 0, def.worldWidth, def.worldHeight)
+  g.fillRect(0, 0, scene.scale.width, scene.scale.height)
 
-  // world grid lines
+  // scrollable grid lines
   const wg = scene.add.graphics().setDepth(-9)
   wg.lineStyle(1, 0x0d2a3e, 0.4)
   for (let x = 0; x <= def.worldWidth; x += 40) {
@@ -31,10 +41,11 @@ export function loadLevel(scene: Phaser.Scene, def: LevelDef, diceCollected: boo
   }
 
   const staticPlatforms = scene.physics.add.staticGroup()
-  const movingPlatforms = scene.physics.add.group({ runChildUpdate: true })
+  const movingPlatforms = scene.physics.add.group()
   const crumblePlatforms = scene.physics.add.staticGroup()
   const crumbleRects = new Map<Phaser.GameObjects.Rectangle, { delay: number; fallen: boolean }>()
   const hazardsArr: Phaser.GameObjects.GameObject[] = []
+  const movingPlatformData: MovingPlatformData[] = []
 
   for (const p of def.platforms) {
     if (p.kind === 'moving') {
@@ -44,30 +55,24 @@ export function loadLevel(scene: Phaser.Scene, def: LevelDef, diceCollected: boo
       const body = rect.body as Phaser.Physics.Arcade.Body
       body.setImmovable(true)
       body.setAllowGravity(false)
+      body.setMaxVelocity(500, 500)
 
-      const startX = p.x + p.width / 2
-      const startY = p.y + p.height / 2
+      const speed = p.moveSpeed ?? 80
+      // start moving in positive direction
       if (p.moveAxis === 'x') {
-        scene.tweens.add({
-          targets: rect,
-          x: startX + (p.moveRange ?? 100),
-          duration: ((p.moveRange ?? 100) * 2000) / (p.moveSpeed ?? 80),
-          yoyo: true,
-          repeat: -1,
-          ease: 'Linear',
-          onUpdate: () => body.reset(rect.x, rect.y),
-        })
+        body.setVelocityX(speed)
       } else {
-        scene.tweens.add({
-          targets: rect,
-          y: startY + (p.moveRange ?? 80),
-          duration: ((p.moveRange ?? 80) * 2000) / (p.moveSpeed ?? 60),
-          yoyo: true,
-          repeat: -1,
-          ease: 'Linear',
-          onUpdate: () => body.reset(rect.x, rect.y),
-        })
+        body.setVelocityY(speed)
       }
+
+      movingPlatformData.push({
+        rect,
+        originX: p.x + p.width / 2,
+        originY: p.y + p.height / 2,
+        range: p.moveRange ?? 100,
+        speed,
+        axis: p.moveAxis ?? 'x',
+      })
       movingPlatforms.add(rect)
     } else if (p.kind === 'crumble') {
       const rect = scene.add.rectangle(p.x + p.width / 2, p.y + p.height / 2, p.width, p.height, 0x3a2a1a)
@@ -83,30 +88,47 @@ export function loadLevel(scene: Phaser.Scene, def: LevelDef, diceCollected: boo
     }
   }
 
-  // hazards
   for (const h of def.hazards) {
     const hazard = new Hazard(scene, h)
     hazardsArr.push(hazard)
   }
 
-  // dice
   let dice: DicePickup | null = null
   if (!diceCollected) {
     dice = new DicePickup(scene, def.dice.x, def.dice.y)
   }
 
-  // exit
   const e = def.exit
   const exit = scene.add.rectangle(e.x + e.width / 2, e.y + e.height / 2, e.width, e.height, COLORS.EXIT, 0.3)
   exit.setStrokeStyle(2, COLORS.EXIT)
   scene.physics.add.existing(exit, true)
 
-  // exit label
   scene.add.text(e.x + e.width / 2, e.y - 14, 'EXIT', {
     fontSize: '9px',
     color: '#00ff88',
     fontFamily: 'monospace',
   }).setOrigin(0.5)
 
-  return { staticPlatforms, movingPlatforms, crumblePlatforms, hazards: hazardsArr, dice, exit, crumbleRects }
+  return { staticPlatforms, movingPlatforms, crumblePlatforms, hazards: hazardsArr, dice, exit, crumbleRects, movingPlatformData }
+}
+
+// Call this every frame from GameScene.update() to bounce moving platforms
+export function updateMovingPlatforms(data: MovingPlatformData[]) {
+  for (const d of data) {
+    if (!d.rect.active) continue
+    const body = d.rect.body as Phaser.Physics.Arcade.Body
+    if (d.axis === 'x') {
+      if (d.rect.x >= d.originX + d.range) {
+        body.setVelocityX(-d.speed)
+      } else if (d.rect.x <= d.originX - d.range) {
+        body.setVelocityX(d.speed)
+      }
+    } else {
+      if (d.rect.y >= d.originY + d.range) {
+        body.setVelocityY(-d.speed)
+      } else if (d.rect.y <= d.originY - d.range) {
+        body.setVelocityY(d.speed)
+      }
+    }
+  }
 }

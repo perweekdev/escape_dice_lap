@@ -1,7 +1,6 @@
 import Phaser from 'phaser'
-import {} from '../../constants'
 import { LEVELS } from '../data/levels'
-import { loadLevel } from '../systems/LevelLoader'
+import { loadLevel, updateMovingPlatforms } from '../systems/LevelLoader'
 import type { LevelObjects } from '../systems/LevelLoader'
 import { rollModule } from '../data/modules'
 import Player from '../entities/Player'
@@ -56,7 +55,6 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private loadCurrentLevel() {
-    // clean old objects if any
     if (this.levelObjects) {
       this.cleanLevel()
     }
@@ -67,13 +65,15 @@ export default class GameScene extends Phaser.Scene {
 
     this.levelObjects = loadLevel(this, def, this.diceCollectedPerLevel[this.currentLevelIdx])
 
-    // player
     if (this.player) {
       this.player.destroy()
     }
     this.player = new Player(this, def.spawnX, def.spawnY)
+    // offset camera down so player doesn't hide behind top HUD (80px)
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12)
+    this.cameras.main.setFollowOffset(0, -40)
     this.cameras.main.setDeadzone(120, 60)
+
 
     this.setupCollisions()
   }
@@ -88,13 +88,13 @@ export default class GameScene extends Phaser.Scene {
     const { staticPlatforms, movingPlatforms, crumblePlatforms, hazards, dice, exit } = this.levelObjects
 
     this.physics.add.collider(this.player, staticPlatforms)
-    this.physics.add.collider(this.player, movingPlatforms, (_player, platform) => {
-      const p = this.player
-      const plat = platform as Phaser.GameObjects.Rectangle
-      const platBody = plat.body as Phaser.Physics.Arcade.Body
-      const playerBody = p.body as Phaser.Physics.Arcade.Body
+
+    // Moving platform: carry player horizontally
+    this.physics.add.collider(this.player, movingPlatforms, (_playerObj, platformObj) => {
+      const playerBody = this.player.body as Phaser.Physics.Arcade.Body
+      const platBody = (platformObj as Phaser.GameObjects.Rectangle).body as Phaser.Physics.Arcade.Body
       if (playerBody.blocked.down) {
-        playerBody.setVelocityX(playerBody.velocity.x + platBody.velocity.x)
+        playerBody.x += platBody.velocity.x * (1 / 60)
       }
     })
 
@@ -167,7 +167,6 @@ export default class GameScene extends Phaser.Scene {
 
   private respawn() {
     const def = LEVELS[this.currentLevelIdx]
-    // rebuild level (crumble resets) but keep modules
     this.cleanLevel()
     this.physics.world.setBounds(0, 0, def.worldWidth, def.worldHeight)
     this.levelObjects = loadLevel(this, def, this.diceCollectedPerLevel[this.currentLevelIdx])
@@ -210,6 +209,11 @@ export default class GameScene extends Phaser.Scene {
   update(_time: number, delta: number) {
     if (this.isDying || this.isTransitioning) return
 
+    // update moving platforms (velocity-based bounce)
+    if (this.levelObjects?.movingPlatformData) {
+      updateMovingPlatforms(this.levelObjects.movingPlatformData)
+    }
+
     const result = this.timerSystem.update(delta)
     EventBus.emit(Events.TIMER_UPDATED, {
       elapsed: this.timerSystem.formatElapsed(),
@@ -225,7 +229,7 @@ export default class GameScene extends Phaser.Scene {
     if (!this.player) return
     this.player.handleMovement(this.cursors, this.wasd)
 
-    // module activation
+    // module activation keys 1-5
     this.numberKeys.forEach((key, i) => {
       if (Phaser.Input.Keyboard.JustDown(key)) {
         this.moduleSystem.activateSlot(i, this.player, (text) => {
