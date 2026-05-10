@@ -67,20 +67,26 @@ export const LEVELS: LevelDef[] = [
     spawnX: 80,
     spawnY: 420,
     platforms: [
-      { x: 0, y: 500, width: 320, height: 40 },
-      { x: 200, y: 360, width: 128, height: 16 },
-      { x: 420, y: 420, width: 96, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 120, moveSpeed: 80 },
-      { x: 620, y: 340, width: 128, height: 16 },
-      { x: 780, y: 260, width: 96, height: 16, kind: 'moving', moveAxis: 'y', moveRange: 80, moveSpeed: 60 },
-      { x: 960, y: 200, width: 160, height: 16 },
-      { x: 1100, y: 300, width: 96, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 100, moveSpeed: 100 },
-      { x: 1260, y: 200, width: 128, height: 16 },
-      // dice on moving platform
-      { x: 550, y: 260, width: 96, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 80, moveSpeed: 70 },
+      // starting ground
+      { x: 0, y: 500, width: 280, height: 40 },
+      // first hop — static, easy reach
+      { x: 300, y: 420, width: 128, height: 16 },
+      // moving platform (x-axis), close enough to jump to
+      { x: 460, y: 350, width: 112, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 80, moveSpeed: 70 },
+      // static landing pad
+      { x: 680, y: 300, width: 128, height: 16 },
+      // moving platform (x-axis)
+      { x: 860, y: 240, width: 112, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 90, moveSpeed: 85 },
+      // static platform
+      { x: 1060, y: 200, width: 128, height: 16 },
+      // final moving platform before exit
+      { x: 1230, y: 260, width: 112, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 70, moveSpeed: 95 },
+      // dice platform — static, clearly visible
+      { x: 560, y: 420, width: 112, height: 16 },
     ],
     hazards: [],
-    dice: { x: 598, y: 230 },
-    exit: { x: 1340, y: 156, width: 48, height: 48 },
+    dice: { x: 616, y: 390 },
+    exit: { x: 1370, y: 216, width: 48, height: 48 },
   },
 
   // STAGE 3 — PRESSURE TEST ZONE
@@ -126,25 +132,28 @@ export const LEVELS: LevelDef[] = [
     spawnX: 80,
     spawnY: 420,
     platforms: [
-      { x: 0, y: 500, width: 200, height: 40 },
-      { x: 240, y: 380, width: 128, height: 16 },
-      { x: 430, y: 300, width: 96, height: 16 },
-      { x: 600, y: 380, width: 128, height: 16 },
-      { x: 780, y: 280, width: 96, height: 16 },
-      { x: 960, y: 200, width: 160, height: 16 },
-      { x: 1180, y: 300, width: 128, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 80, moveSpeed: 90 },
-      { x: 1380, y: 220, width: 96, height: 16 },
-      { x: 1540, y: 300, width: 128, height: 16 },
-      { x: 1700, y: 200, width: 192, height: 16 },
+      // safe starting ground — no laser covers this area (x 0~260)
+      { x: 0, y: 500, width: 260, height: 40 },
+      { x: 280, y: 400, width: 128, height: 16 },
+      { x: 450, y: 320, width: 112, height: 16 },
+      { x: 620, y: 400, width: 128, height: 16 },
+      { x: 800, y: 300, width: 112, height: 16 },
+      { x: 980, y: 220, width: 160, height: 16 },
+      { x: 1190, y: 320, width: 128, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 80, moveSpeed: 90 },
+      { x: 1390, y: 240, width: 112, height: 16 },
+      { x: 1560, y: 320, width: 128, height: 16 },
+      { x: 1720, y: 220, width: 192, height: 16 },
     ],
     hazards: [
-      { kind: 'laser', x: 390, y: 280, width: 12, height: 220, axis: 'v', flashInterval: 2000 },
-      { kind: 'laser', x: 740, y: 260, width: 12, height: 240, axis: 'v', flashInterval: 2500 },
-      { kind: 'laser', x: 0, y: 440, width: 960, height: 12, axis: 'h', flashInterval: 3000 },
-      { kind: 'laser', x: 1340, y: 200, width: 12, height: 300, axis: 'v', flashInterval: 1800 },
+      // vertical lasers — none near spawn (x<260)
+      { kind: 'laser', x: 420, y: 300, width: 12, height: 200, axis: 'v', flashInterval: 2000 },
+      { kind: 'laser', x: 760, y: 280, width: 12, height: 220, axis: 'v', flashInterval: 2500 },
+      // horizontal laser starts at x=300 — spawn area (x<260) is safe
+      { kind: 'laser', x: 300, y: 460, width: 700, height: 12, axis: 'h', flashInterval: 3000 },
+      { kind: 'laser', x: 1350, y: 220, width: 12, height: 280, axis: 'v', flashInterval: 1800 },
     ],
-    dice: { x: 808, y: 250 },
-    exit: { x: 1830, y: 156, width: 48, height: 48 },
+    dice: { x: 828, y: 270 },
+    exit: { x: 1840, y: 176, width: 48, height: 48 },
   },
 
   // STAGE 5 — ESCAPE ROUTE

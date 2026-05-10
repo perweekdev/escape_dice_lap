@@ -175,10 +175,15 @@ export default class GameScene extends Phaser.Scene {
   }
 
   private respawn() {
+    // Reset to Stage 1 on death
+    this.currentLevelIdx = 0
+    this.diceCollectedPerLevel = [false, false, false, false, false]
+
     const def = LEVELS[this.currentLevelIdx]
     this.cleanLevel()
     this.physics.world.setBounds(0, 0, def.worldWidth, def.worldHeight)
-    this.levelObjects = loadLevel(this, def, this.diceCollectedPerLevel[this.currentLevelIdx])
+    this.cameras.main.setBounds(0, 0, def.worldWidth, def.worldHeight)
+    this.levelObjects = loadLevel(this, def, false)
 
     this.player.destroy()
     this.player = new Player(this, def.spawnX, def.spawnY)
@@ -188,6 +193,7 @@ export default class GameScene extends Phaser.Scene {
     this.cameras.main.setFollowOffset(0, -40)
     this.cameras.main.setDeadzone(120, 60)
     this.setupCollisions()
+    EventBus.emit(Events.STAGE_CHANGED, `STAGE 1: ${LEVELS[0].name}`)
     EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
   }
 
