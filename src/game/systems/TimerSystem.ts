@@ -46,6 +46,11 @@ export default class TimerSystem {
     return `${m}:${s.toString().padStart(2, '0')}`
   }
 
+  setFromSave(deaths: number, elapsedMs: number) {
+    this._deaths = deaths
+    this.elapsedMs = elapsedMs
+  }
+
   reset() {
     this.elapsedMs = 0
     this._deaths = 0

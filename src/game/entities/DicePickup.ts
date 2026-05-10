@@ -22,10 +22,11 @@ export default class DicePickup extends Phaser.GameObjects.Container {
     body.setSize(22, 22)
     body.setOffset(-11, -11)
 
-    // float tween
+    // Float tween on the CUBE child only — keeps Container (physics body) at fixed position
+    // so overlap detection is always accurate regardless of visual offset
     scene.tweens.add({
-      targets: this,
-      y: y - 8,
+      targets: cube,
+      y: -8,
       duration: 1200,
       yoyo: true,
       repeat: -1,

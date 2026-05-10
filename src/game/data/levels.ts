@@ -67,26 +67,24 @@ export const LEVELS: LevelDef[] = [
     spawnX: 80,
     spawnY: 420,
     platforms: [
-      // starting ground
-      { x: 0, y: 500, width: 280, height: 40 },
-      // first hop — static, easy reach
-      { x: 300, y: 420, width: 128, height: 16 },
-      // moving platform (x-axis), close enough to jump to
-      { x: 460, y: 350, width: 112, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 80, moveSpeed: 70 },
-      // static landing pad
-      { x: 680, y: 300, width: 128, height: 16 },
-      // moving platform (x-axis)
-      { x: 860, y: 240, width: 112, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 90, moveSpeed: 85 },
-      // static platform
-      { x: 1060, y: 200, width: 128, height: 16 },
-      // final moving platform before exit
-      { x: 1230, y: 260, width: 112, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 70, moveSpeed: 95 },
-      // dice platform — static, clearly visible
-      { x: 560, y: 420, width: 112, height: 16 },
+      // wide starting ground so player lands safely
+      { x: 0, y: 500, width: 360, height: 40 },
+      // step up — static
+      { x: 380, y: 420, width: 140, height: 16 },
+      // dice is on this step, easy to reach
+      { x: 560, y: 340, width: 140, height: 16 },
+      // moving platform, starts close to the static above
+      { x: 730, y: 280, width: 120, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 70, moveSpeed: 75 },
+      // static
+      { x: 940, y: 220, width: 140, height: 16 },
+      // moving platform
+      { x: 1110, y: 280, width: 120, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 80, moveSpeed: 90 },
+      // final static before exit
+      { x: 1300, y: 200, width: 120, height: 16 },
     ],
     hazards: [],
-    dice: { x: 616, y: 390 },
-    exit: { x: 1370, y: 216, width: 48, height: 48 },
+    dice: { x: 630, y: 310 },
+    exit: { x: 1360, y: 156, width: 48, height: 48 },
   },
 
   // STAGE 3 — PRESSURE TEST ZONE

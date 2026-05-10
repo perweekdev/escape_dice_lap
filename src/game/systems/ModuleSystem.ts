@@ -40,7 +40,8 @@ export default class ModuleSystem {
       isNegative = resolved.variant === 'negative'
     }
 
-    this.slots[index] = { ...resolved, charges: resolved.charges - 1 }
+    const newCharges = resolved.charges - 1
+    this.slots[index] = newCharges <= 0 ? null : { ...resolved, charges: newCharges }
     onBanner(bannerText, isNegative)
 
     // remove existing effect in same category before applying new one
