@@ -33,6 +33,7 @@ export default class GameScene extends Phaser.Scene {
     this.diceCollectedPerLevel = [false, false, false, false, false]
     this.isDying = false
     this.isTransitioning = false
+    this.numberKeys = []
 
     this.moduleSystem = new ModuleSystem()
     this.timerSystem = new TimerSystem()
@@ -50,9 +51,12 @@ export default class GameScene extends Phaser.Scene {
 
     this.loadCurrentLevel()
     this.scene.launch('UIScene')
-    EventBus.emit(Events.STAGE_CHANGED, LEVELS[this.currentLevelIdx].name)
-    EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
-    EventBus.emit(Events.DEATH_COUNT_UPDATED, 0)
+    // delay one frame so UIScene.create() has run before initial state arrives
+    this.time.delayedCall(0, () => {
+      EventBus.emit(Events.STAGE_CHANGED, `STAGE ${this.currentLevelIdx + 1}: ${LEVELS[this.currentLevelIdx].name}`)
+      EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
+      EventBus.emit(Events.DEATH_COUNT_UPDATED, 0)
+    })
   }
 
   private loadCurrentLevel() {
@@ -200,7 +204,7 @@ export default class GameScene extends Phaser.Scene {
         this.moduleSystem.clearAllEffects(this.player)
         this.loadCurrentLevel()
         this.isTransitioning = false
-        EventBus.emit(Events.STAGE_CHANGED, LEVELS[this.currentLevelIdx].name)
+        EventBus.emit(Events.STAGE_CHANGED, `STAGE ${this.currentLevelIdx + 1}: ${LEVELS[this.currentLevelIdx].name}`)
         EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
       }
     })

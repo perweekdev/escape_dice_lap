@@ -29,7 +29,7 @@ export default class UIScene extends Phaser.Scene {
     this.add.rectangle(CANVAS_WIDTH / 2, TOP_BAR_H, CANVAS_WIDTH, 2, COLORS.PLATFORM_EDGE, 0.3)
 
     // Row 1: stage | timer | deaths
-    this.stageText = this.add.text(12, 8, 'STAGE 1: INIT ZONE', {
+    this.stageText = this.add.text(12, 8, '', {
       fontSize: '11px', color: '#557799', fontFamily: 'monospace',
     })
 

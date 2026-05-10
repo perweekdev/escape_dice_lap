@@ -31,13 +31,10 @@ export default class Hazard extends Phaser.GameObjects.Rectangle {
   }
 
   private toggleLaser() {
+    if (!this.active) return
     this.isActive = !this.isActive
     this.setFillStyle(this.isActive ? COLORS.LASER_ON : COLORS.LASER_OFF)
     const body = this.body as Phaser.Physics.Arcade.StaticBody
-    if (this.isActive) {
-      body.enable = true
-    } else {
-      body.enable = false
-    }
+    body.enable = this.isActive
   }
 }
