@@ -72,6 +72,8 @@ export default class GameScene extends Phaser.Scene {
     }
 
     this.loadCurrentLevel()
+    // Fade in after death respawn (or fresh start)
+    this.cameras.main.fadeIn(300, 0, 0, 0)
     this.scene.launch('UIScene')
     this.time.delayedCall(0, () => {
       EventBus.emit(Events.STAGE_CHANGED, `STAGE 1: ${LEVELS[0].name}`)
@@ -215,12 +217,12 @@ export default class GameScene extends Phaser.Scene {
       elapsedMs: this.timerSystem.elapsed,
     }
 
-    // Use scene.restart to get a completely fresh physics world (fixes movement freeze)
+    // scene.start re-runs init→create with fresh physics (fixes movement freeze)
     this.time.delayedCall(400, () => {
       this.cameras.main.fade(250, 0, 0, 0)
-      this.time.delayedCall(250, () => {
+      this.time.delayedCall(260, () => {
         this.scene.stop('UIScene')
-        this.scene.restart(respawnData)
+        this.scene.start('GameScene', respawnData)
       })
     })
   }

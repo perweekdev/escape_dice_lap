@@ -1,3 +1,4 @@
+import Phaser from 'phaser'
 import type { ModuleDef } from '../data/modules'
 import { resolveUnknown } from '../data/modules'
 import { MAX_MODULE_SLOTS, GRAVITY } from '../../constants'
@@ -52,11 +53,6 @@ export default class ModuleSystem {
       return true
     }
 
-    if (resolved.kind === 'shield') {
-      if (resolved.variant === 'positive') player.activateShield()
-      return true
-    }
-
     const effect = this.buildEffect(resolved, player)
     if (effect) {
       this.effects.set(resolved.kind, effect)
@@ -74,10 +70,13 @@ export default class ModuleSystem {
         player.speedMult = mod.variant === 'positive' ? 1.5 : 0.65
         removeFn = (p) => { if (p.active) p.speedMult = 1 }
         break
+
       case 'jump':
-        player.jumpMult = mod.variant === 'positive' ? 1.4 : 0.6
-        removeFn = (p) => { if (p.active) p.jumpMult = 1 }
+        // Always positive: enable double jump for the duration
+        player.jumpDoubleEnabled = true
+        removeFn = (p) => { if (p.active) p.jumpDoubleEnabled = false }
         break
+
       case 'gravity': {
         const body = player.body as Phaser.Physics.Arcade.Body
         body.setGravityY(mod.variant === 'positive' ? -GRAVITY * 0.55 : GRAVITY * 0.8)
@@ -86,6 +85,19 @@ export default class ModuleSystem {
         }
         break
       }
+
+      case 'time': {
+        // Affect physics world time scale; game timer is unaffected (real pressure stays)
+        const world = player.scene.physics.world as Phaser.Physics.Arcade.World
+        world.timeScale = mod.variant === 'positive' ? 0.5 : 2
+        removeFn = (p) => {
+          if (p.active) {
+            (p.scene.physics.world as Phaser.Physics.Arcade.World).timeScale = 1
+          }
+        }
+        break
+      }
+
       default:
         return null
     }
@@ -109,10 +121,6 @@ export default class ModuleSystem {
       if (player.active) existing.removeFn(player)
       this.effects.delete(category)
     }
-  }
-
-  onPlayerDeath(player: Player): boolean {
-    return player.absorbDeath()
   }
 
   clearAllEffects(player: Player) {

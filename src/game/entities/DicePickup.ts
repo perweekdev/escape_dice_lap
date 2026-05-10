@@ -10,11 +10,14 @@ export default class DicePickup extends Phaser.GameObjects.Container {
     const cube = scene.add.rectangle(0, 0, 22, 22, COLORS.DICE)
     cube.setStrokeStyle(2, COLORS.DICE_GLOW)
 
-    // dots (2x2 squares representing dice face)
+    // dots as children relative to cube center
     const dotPositions = [[-6, -6], [6, -6], [-6, 6], [6, 6], [0, 0]]
     const dots = dotPositions.map(([dx, dy]) => scene.add.rectangle(dx, dy, 4, 4, COLORS.BG))
 
-    this.add([cube, ...dots])
+    // Group cube + dots into inner container so they move together
+    const visual = scene.add.container(0, 0, [cube, ...dots])
+
+    this.add(visual)
     scene.add.existing(this)
     scene.physics.add.existing(this, true)
 
@@ -22,10 +25,9 @@ export default class DicePickup extends Phaser.GameObjects.Container {
     body.setSize(22, 22)
     body.setOffset(-11, -11)
 
-    // Float tween on the CUBE child only — keeps Container (physics body) at fixed position
-    // so overlap detection is always accurate regardless of visual offset
+    // Tween the inner visual container — physics body stays fixed
     scene.tweens.add({
-      targets: cube,
+      targets: visual,
       y: -8,
       duration: 1200,
       yoyo: true,
@@ -33,7 +35,7 @@ export default class DicePickup extends Phaser.GameObjects.Container {
       ease: 'Sine.easeInOut',
     })
 
-    // glow pulse
+    // glow pulse on cube only
     scene.tweens.add({
       targets: cube,
       alpha: 0.5,

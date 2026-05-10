@@ -58,7 +58,7 @@ export const LEVELS: LevelDef[] = [
     exit: { x: 700, y: 136, width: 48, height: 48 },
   },
 
-  // STAGE 2 — CALIBRATION ZONE
+  // STAGE 2 — CALIBRATION ZONE  (all static — gap difficulty only)
   {
     id: 2,
     name: 'CALIBRATION ZONE',
@@ -67,24 +67,18 @@ export const LEVELS: LevelDef[] = [
     spawnX: 80,
     spawnY: 420,
     platforms: [
-      // wide starting ground so player lands safely
-      { x: 0, y: 500, width: 360, height: 40 },
-      // step up — static
-      { x: 380, y: 420, width: 140, height: 16 },
-      // dice is on this step, easy to reach
-      { x: 560, y: 340, width: 140, height: 16 },
-      // moving platform, starts close to the static above
-      { x: 730, y: 280, width: 120, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 70, moveSpeed: 75 },
-      // static
-      { x: 940, y: 220, width: 140, height: 16 },
-      // moving platform
-      { x: 1110, y: 280, width: 120, height: 16, kind: 'moving', moveAxis: 'x', moveRange: 80, moveSpeed: 90 },
-      // final static before exit
-      { x: 1300, y: 200, width: 120, height: 16 },
+      { x: 0,    y: 500, width: 320, height: 40 },  // starting ground
+      { x: 340,  y: 430, width: 120, height: 16 },  // step 1
+      { x: 490,  y: 360, width: 120, height: 16 },  // step 2 (dice here)
+      { x: 650,  y: 290, width: 120, height: 16 },  // step 3
+      { x: 810,  y: 220, width: 120, height: 16 },  // step 4
+      { x: 980,  y: 300, width: 120, height: 16 },  // step 5 (drops slightly)
+      { x: 1140, y: 220, width: 120, height: 16 },  // step 6
+      { x: 1300, y: 160, width: 120, height: 16 },  // final platform
     ],
     hazards: [],
-    dice: { x: 630, y: 310 },
-    exit: { x: 1360, y: 156, width: 48, height: 48 },
+    dice: { x: 550, y: 330 },
+    exit: { x: 1360, y: 116, width: 48, height: 48 },
   },
 
   // STAGE 3 — PRESSURE TEST ZONE
