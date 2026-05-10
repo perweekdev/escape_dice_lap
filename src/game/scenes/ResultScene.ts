@@ -1,5 +1,6 @@
 import Phaser from 'phaser'
 import { CANVAS_WIDTH, CANVAS_HEIGHT, COLORS } from '../../constants'
+import { soundSystem } from '../systems/SoundSystem'
 
 interface ResultData {
   outcome: 'win' | 'lose'
@@ -15,6 +16,9 @@ export default class ResultScene extends Phaser.Scene {
   init(data: ResultData) {
     if (data.outcome === 'win') {
       this.saveScore(data.timeMs, data.deaths)
+      this.time.delayedCall(100, () => soundSystem.stageClear())
+    } else {
+      this.time.delayedCall(100, () => soundSystem.gameOver())
     }
     this.createUI(data)
   }

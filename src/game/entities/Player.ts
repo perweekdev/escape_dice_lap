@@ -16,7 +16,11 @@ export default class Player extends Phaser.GameObjects.Container {
   private _facing = 1
   private _canJump = false
   private _coyoteFrames = 0
-  private static readonly COYOTE_MAX = 8 // ~133ms at 60fps
+  private _wasOnGround = false
+  private static readonly COYOTE_MAX = 8
+
+  onJump?: () => void
+  onLand?: () => void
   private _body!: Phaser.GameObjects.Rectangle
   private _antenna!: Phaser.GameObjects.Rectangle
   private _eye!: Phaser.GameObjects.Rectangle
@@ -54,11 +58,13 @@ export default class Player extends Phaser.GameObjects.Container {
     if (onGround) {
       this._canJump = true
       this._coyoteFrames = Player.COYOTE_MAX
+      if (!this._wasOnGround) this.onLand?.()
     } else if (this._coyoteFrames > 0) {
       this._coyoteFrames--
     } else {
       this._canJump = false
     }
+    this._wasOnGround = onGround
 
     const speed = PLAYER_SPEED * this.speedMult
     const leftDown = (cursors.left.isDown || wasd.left.isDown) !== this.inputInverted
@@ -87,6 +93,9 @@ export default class Player extends Phaser.GameObjects.Container {
     if (jumpPressed && this._canJump && !this.jumpDisabled) {
       body.setVelocityY(PLAYER_JUMP_VELOCITY * this.jumpMult)
       this._canJump = false
+      this._coyoteFrames = 0
+      this._wasOnGround = false
+      this.onJump?.()
     }
 
     // eye flips with direction

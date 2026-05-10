@@ -7,6 +7,7 @@ import Player from '../entities/Player'
 import ModuleSystem from '../systems/ModuleSystem'
 import TimerSystem from '../systems/TimerSystem'
 import { EventBus, Events } from '../EventBus'
+import { soundSystem } from '../systems/SoundSystem'
 
 export default class GameScene extends Phaser.Scene {
   private player!: Player
@@ -69,6 +70,8 @@ export default class GameScene extends Phaser.Scene {
       this.player.destroy()
     }
     this.player = new Player(this, def.spawnX, def.spawnY)
+    this.player.onJump = () => soundSystem.jump()
+    this.player.onLand = () => soundSystem.land()
     // offset camera down so player doesn't hide behind top HUD (80px)
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12)
     this.cameras.main.setFollowOffset(0, -40)
@@ -128,9 +131,10 @@ export default class GameScene extends Phaser.Scene {
         const mod = rollModule()
         const idx = this.moduleSystem.addModule(mod)
         if (idx !== -1) {
+          soundSystem.diceCollect()
           EventBus.emit(Events.DICE_COLLECTED, mod)
           EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
-          EventBus.emit(Events.SHOW_BANNER, `DICE COLLECTED: ${mod.label}`)
+          EventBus.emit(Events.SHOW_BANNER, `DICE: ${mod.label}`)
         }
       })
     }
@@ -144,6 +148,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.isDying || this.isTransitioning) return
     this.isDying = true
 
+    soundSystem.death()
     this.cameras.main.shake(200, 0.02)
     this.cameras.main.flash(150, 255, 50, 50)
 
@@ -173,7 +178,10 @@ export default class GameScene extends Phaser.Scene {
 
     this.player.destroy()
     this.player = new Player(this, def.spawnX, def.spawnY)
+    this.player.onJump = () => soundSystem.jump()
+    this.player.onLand = () => soundSystem.land()
     this.cameras.main.startFollow(this.player, true, 0.12, 0.12)
+    this.cameras.main.setFollowOffset(0, -40)
     this.cameras.main.setDeadzone(120, 60)
     this.setupCollisions()
     EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
@@ -181,6 +189,7 @@ export default class GameScene extends Phaser.Scene {
 
   private advanceStage() {
     this.isTransitioning = true
+    soundSystem.stageClear()
     this.cameras.main.flash(200, 0, 255, 136)
 
     this.time.delayedCall(300, () => {
@@ -232,12 +241,17 @@ export default class GameScene extends Phaser.Scene {
     // module activation keys 1-5
     this.numberKeys.forEach((key, i) => {
       if (Phaser.Input.Keyboard.JustDown(key)) {
-        this.moduleSystem.activateSlot(i, this.player, (text) => {
+        const activated = this.moduleSystem.activateSlot(i, this.player, (text, isNegative) => {
           EventBus.emit(Events.SHOW_BANNER, text)
+          if (isNegative) soundSystem.moduleActivateNegative()
+          else soundSystem.moduleActivate()
         })
-        EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
+        if (activated) EventBus.emit(Events.MODULE_UPDATED, this.moduleSystem.slots)
       }
     })
+
+    // warning beep when time is critical
+    if (this.timerSystem.isWarning()) soundSystem.warningBeep()
 
     // pit fall detection
     const body = this.player.body as Phaser.Physics.Arcade.Body
